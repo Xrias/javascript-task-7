@@ -26,7 +26,7 @@ function runParallel(jobs, parallelNum, timeout = 1000) {
 
     function getResults() {
         let results = [];
-        jobsObjects.forEach((jobObject) => results.concat.push(jobObject.result));
+        jobsObjects.forEach((jobObject) => results.push(jobObject.result));
 
         return results;
     }
