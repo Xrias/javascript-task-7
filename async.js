@@ -24,11 +24,19 @@ function runParallel(jobs, parallelNum, timeout = 1000) {
     let jobsObjects = jobs.map((job, jobIndex) => jobToObject(job, jobIndex));
     let finished = 0;
 
+    function getResults() {
+        let results = [];
+        jobsObjects.forEach((jobObject) => results.concat.push(jobObject.result));
+
+        return results;
+    }
+
     function onResult(resolve, result, jobObject) {
         jobObject.result = result;
         ++finished;
         if (jobs.length === finished) {
-            resolve(jobObject.result);
+            let results = getResults();
+            resolve(results);
         } else if (jobsObjects.length > 0) {
             runPromise(resolve, jobsObjects.shift());
         }
