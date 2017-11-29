@@ -39,13 +39,16 @@ function runParallel(jobs, parallelNum, timeout = 1000) {
         }
         let jobsObjects = jobs.map(limitByTime(timeout))
             .map((job, jobIndex) => jobToObject(job, jobIndex));
-        let finished = 0;
+        let startCount = 0;
+        let finishCount = 0;
+        let results = [];
 
         /** Запускаем promise
          * @param {Number} jobObject
          */
         function runPromise(jobObject) {
-            let handler = result => onResult(result, jobObject);
+            let index = startCount++;
+            let handler = result => onResult(result, index);
             jobObject.getPromise().then(handler)
                 .catch(handler);
         }
@@ -62,15 +65,15 @@ function runParallel(jobs, parallelNum, timeout = 1000) {
 
         /** Если закончили то resolve, если нет то запускаем следующий
          * @param {Number} result 
-         * @param {Number} jobObject
+         * @param {Number} index
          */
-        function onResult(result, jobObject) {
-            jobObject.result = result;
-            if (jobsObjects.length === ++finished) {
-                resolve(getResults());
+        function onResult(result, index) {
+            results[index] = result;
+            if (jobsObjects.length === ++finishCount) {
+                resolve(results);
             }
-            if (jobObject.index + 1 < jobsObjects.length) {
-                runPromise(jobsObjects[jobObject.index + 1]);
+            if (startCount < jobsObjects.length) {
+                runPromise(jobsObjects[startCount]);
             }
         }
 
