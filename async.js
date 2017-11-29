@@ -35,30 +35,25 @@ function runParallel(jobs, parallelNum, timeout = 1000) {
         jobObject.result = result;
         ++finished;
         if (jobs.length === finished) {
-            let results = getResults();
-            resolve(results);
+            resolve(getResults());
         } else if (jobsObjects.length > 0) {
             runPromise(resolve, jobsObjects.shift());
         }
     }
 
     function runPromise(resolve, jobObject) {
-        jobObject.startTime = Date.now();
         let handler = result => onResult(resolve, result, jobObject);
-        jobObject.endTime = Date.now();
-
         jobObject.getPromise().then(handler, handler);
-
     }
 
     function runPromises() {
         return new Promise(resolve => {
-            if (parallelNum > 0 && jobs.length > 0) {
+            if (parallelNum > 0 && jobs.length) {
                 let firstJobs = jobsObjects.slice(0, parallelNum);
                 jobsObjects = jobsObjects.slice(parallelNum);
                 firstJobs.forEach((jobObject) => runPromise(resolve, jobObject));
             } else {
-                resolve([]);
+                resolve(getResults());
             }
         });
     }
