@@ -11,9 +11,7 @@ exports.runParallel = runParallel;
 function jobToObject(job, jobIndex) {
     return {
         getPromise: job,
-        index: jobIndex,
-        startTime: 0,
-        endTime: 0
+        index: jobIndex
     };
 }
 
@@ -35,56 +33,47 @@ function limitByTime(timeout) {
  * @returns {Promise}
  */
 function runParallel(jobs, parallelNum, timeout = 1000) {
-    let jobsObjects = jobs.map(limitByTime(timeout))
-        .map((job, jobIndex) => jobToObject(job, jobIndex));
-    let finished = 0;
-
-    /** Функция возвращает массив result'ов из всех jobsObject
-     * @returns {Array}
-     */
-    function getResults() {
-        let results = [];
-        jobsObjects.forEach((jobObject) => results.push(jobObject.result));
-
-        return results;
-    }
-
-    /** 
-     * @param {Array} resolve 
-     * @param {Number} result 
-     * @param {Number} jobObject
-     */
-    function onResult(resolve, result, jobObject) {
-        jobObject.result = result;
-        ++finished;
-        if (jobs.length === finished) {
-            resolve(getResults());
-        } else if (jobsObjects.length) {
-            runPromise(resolve, jobsObjects.shift());
+    return new Promise(resolve => {
+        if (parallelNum <= 0 || !jobs.length) {
+            resolve([]);
         }
-    }
+        let jobsObjects = jobs.map(limitByTime(timeout))
+            .map((job, jobIndex) => jobToObject(job, jobIndex));
+        let finished = 0;
 
-    /**
-     * @param {Array} resolve
-     * @param {Number} jobObject
-     */
-    function runPromise(resolve, jobObject) {
-        let handler = result => onResult(resolve, result, jobObject);
-        jobObject.getPromise().then(handler);
-    }
+        /**
+         * @param {Number} jobObject
+         */
+        function runPromise(jobObject) {
+            let handler = result => onResult(result, jobObject);
+            jobObject.getPromise().then(handler)
+                .catch(handler);
+        }
 
-    function runPromises() {
-        return new Promise(resolve => {
-            if (parallelNum > 0 && jobs.length) {
-                let firstJobs = jobsObjects.slice(0, parallelNum);
-                jobsObjects = jobsObjects.slice(parallelNum);
-                firstJobs.forEach((jobObject) => runPromise(resolve, jobObject));
-            } else {
+        /** Функция возвращает массив result'ов из всех jobsObject
+         * @returns {Array}
+         */
+        function getResults() {
+            let results = [];
+            jobsObjects.forEach((jobObject) => results.push(jobObject.result));
+
+            return results;
+        }
+
+        /** 
+         * @param {Number} result 
+         * @param {Number} jobObject
+         */
+        function onResult(result, jobObject) {
+            jobObject.result = result;
+            if (jobs.length === ++finished) {
                 resolve(getResults());
             }
-        });
-    }
+            if (jobObject.index < jobs.length) {
+                runPromise(jobsObjects[++jobObject.index]);
+            }
+        }
 
-    return runPromises();
+        jobsObjects.slice(0, parallelNum).forEach(jobObject => runPromise(jobObject));
+    });
 }
-
