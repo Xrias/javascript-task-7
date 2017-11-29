@@ -20,9 +20,9 @@ function jobToObject(job, jobIndex) {
  * @returns {Object}
  */
 function limitByTime(timeout) {
-    return job => () => new Promise((resolve, reject) => {
-        job().then(resolve, reject);
-        setTimeout(() => reject(new Error('Promise timeout')), timeout);
+    return job => () => new Promise((resolve_, reject_) => {
+        job().then(resolve_, reject_);
+        setTimeout(() => reject_(new Error('Promise timeout')), timeout);
     });
 }
 
@@ -69,8 +69,8 @@ function runParallel(jobs, parallelNum, timeout = 1000) {
             if (jobsObjects.length === ++finished) {
                 resolve(getResults());
             }
-            if (jobObject.index < jobsObjects.length) {
-                runPromise(jobsObjects[++jobObject.index]);
+            if (jobObject.index + 1 < jobsObjects.length) {
+                runPromise(jobsObjects[jobObject.index + 1]);
             }
         }
 
