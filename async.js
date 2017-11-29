@@ -38,11 +38,9 @@ function runParallel(jobs, parallelNum, timeout = 1000) {
         jobObject.startTime = Date.now();
         let handler = result => onResult(resolve, result, jobObject);
         jobObject.endTime = Date.now();
-        if (jobObject.endTime - jobObject.startTime > timeout) {
-            jobObject.getPromise().then(handler, new Error('Promise timeout'));
-        } else {
-            jobObject.getPromise().then(handler, handler);
-        }
+
+        jobObject.getPromise().then(handler, handler);
+
     }
 
     function runPromises() {
